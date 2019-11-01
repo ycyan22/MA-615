@@ -260,6 +260,14 @@ dbListFields(newdb, "JFC")
 dbDisconnect(newdb)
 
 
-
+unique(Direct$ultorg)
+unique(Direct$date)
+unique(Direct$amount)
+unique(Direct$recipid)
+unique(Direct$party)
+unique(Direct$recipcode)
+unique(Direct$type)
+unique(Direct$fectransid)
+unique(Direct$cmteid)
 
 

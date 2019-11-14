@@ -1,0 +1,177 @@
+---
+title: "Midterm presentation"
+author: "Yichu Yan"
+date: "10/18/2019"
+output: 
+  ioslides_presentation:
+    smaller: true
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+
+## WVS WAVE 7
+In 2015 WVSA started planning the 7th wave to be conducted worldwide in 2017-2020. Subsequent waves are planned every five years.
+
+The 7th wave will continue monitoring cultural values, attitudes and beliefs towards gender, family, and religion; attitudes and experience of poverty; education, health, and security; social tolerance and trust; attitudes towards multilateral institutions; cultural differences and similarities between regions and societies. In addition, the WVS-7 questionnaire has been elaborated with the inclusion of such new topics as the issues of justice, moral principles, corruption, accountability and risk, migration, national security and global governance.
+
+
+
+```{r, include=FALSE}
+library(readxl)
+library(dplyr)
+survey <- read_excel('WV6.xlsx') # load data
+mydata <- select(survey, 11,12,24,25,57,58,62,102,104,201,306,307,309,311,319) # select questions
+```
+
+## Select following survey questions
+q1 - V10: Feeling of happiness  
+q2 - V11: State of health (subjective)  
+q3 - V23: Satisfaction with your life  
+q4 - V24: Most people can be trusted  
+q5 - V55: How much freedom of choice and control over own life  
+q6 - V56: Do you think most people would try to take advantage of you if they got a chance, or would they try to be fair? people can be trusted  
+q7 - V59: Satisfaction with financial situation of household  
+q8 - V98: Government responsibility  
+q9 - V100: Hard work brings success  
+q10 - V170: Secure in neighborhood  
+q11 - V237: Family savings during past year  
+q12 - V238: Social class (subjective)  
+q13 - V240: Sex  
+q14 - V242: Age  
+q15 - V248: Highest educational level attained  
+
+
+
+
+
+
+
+## Rename columns and clean no response data
+Since for code -1, -2, -3 here and throughout the interview stand for "Don’t know", "No answer" and "Not applicable", we decided to remove such elemtents.
+
+```{r, include=FALSE}
+library(tidyverse)
+names(mydata)[1] <- "q1"
+names(mydata)[2] <- "q2"
+names(mydata)[3] <- "q3"
+names(mydata)[4] <- "q4"
+names(mydata)[5] <- "q5"
+names(mydata)[6] <- "q6"
+names(mydata)[7] <- "q7"
+names(mydata)[8] <- "q8"
+names(mydata)[9] <- "q9"
+names(mydata)[10] <- "q10"
+names(mydata)[11] <- "q11"
+names(mydata)[12] <- "q12"
+names(mydata)[13] <- "q13"
+names(mydata)[14] <- "q14"
+names(mydata)[15] <- "q15" # rename column names
+mydata[mydata < 0] <- NA # replace negative values with NA
+mydata <- drop_na(mydata) # Drop rows containing missing values
+```
+
+
+
+
+---
+
+```{r, echo=FALSE}
+library(psych) 
+library(GPArotation)
+parallel <- fa.parallel(mydata, fm = 'minres', fa = 'fa') # parallel analysis
+```
+
+
+
+
+---
+
+The blue line shows eigenvalues of actual data and the two red lines (placed on top of each other) show simulated and resampled data. Here we look at the large drops in the actual data and spot the point where it levels off to the right. Also we locate the point of inflection – the point where the gap between simulated data and actual data tends to be minimum.
+Looking at this plot and parallel analysis, anywhere between 2 to 6 factors factors would be good choice.
+
+
+
+
+
+## Factor Analysis
+
+```{r, echo=FALSE}
+sixfactor <- fa(mydata,nfactors = 6,rotate = "oblimin",fm="minres") # 6 factor analysis
+print(sixfactor$loadings,cutoff = 0.3)
+```
+
+---
+```{r, echo=FALSE}
+fa.diagram(sixfactor)
+```
+
+
+The root mean square of residuals (RMSR) is 0.01. This is acceptable as this value should be closer to 0. Next we should check RMSEA (root mean square error of approximation) index. Its value, 0.032 shows good model fit as it’s below 0.05. Finally, the Tucker-Lewis Index (TLI) is 0.964 – an acceptable value considering it’s over 0.9.
+
+
+## Correlations between variables
+The first thing to do when conducting a factor analysis or principal components analysis is to look at the correlations of the variables.
+
+
+```{r, echo=FALSE}
+library(corpcor)
+suvMatrix <- cor(mydata) # create a mtrix to show correlations
+head(round(suvMatrix, 2))
+```
+
+---
+```{r, echo=FALSE}
+cortest.bartlett(mydata) # run Bartlett’s test
+```
+
+For these data, Bartlett’s test is highly significant, and therefore factor analysis is appropriate.
+Then, we could get the determinant:
+
+
+
+```{r, echo=FALSE}
+det(suvMatrix) # get the determinant
+```
+This value is greater than the necessary value of 0.00001. As such, our determinant does not seem problematic.
+
+
+## Factor extraction (PCA)
+For our present purposes we will use principal components analysis (PCA).
+
+```{r, echo=FALSE}
+pc1 <- principal(mydata, nfactors=15, rotate="none")
+plot(pc1$values, type="b") # scree plot
+```
+
+## Redo PCA
+Now that we know how many components we want to extract, we can rerun the analysis, specifying that number. To do this, we use an identical command to the previous model but we change nfactors = 15 to be nfactors = 6 because we now want only six factors.
+
+```{r, echo=FALSE}
+pc2 <- principal(mydata, nfactors=6, rotate="none")
+# factor.model(pc2$loadings)
+residuals<-factor.residuals(suvMatrix, pc2$loadings)
+residuals<-as.matrix(residuals[upper.tri(residuals)])
+```
+
+
+One approach to looking at residuals is just to say that we want the residuals to be small.
+
+```{r, echo=FALSE}
+large.resid<-abs(residuals) > 0.05
+# proportion of the large residuals
+sum(large.resid)/nrow(residuals)
+```
+
+
+
+## Conclusion
+According to the results and information of questionnaires above, we could find the questions that load highly on factor 1 are q3 (“Satisfaction with your life”) with the highest loading of 0.82, q1 (“Feeling of happiness”), q5 (“How much freedom of choice and control over own life”), q2 (“State of health (subjective)”) with the lowest loading of -0.60. All these items seem to relate to physical and mental living conditions. Therefore we might label this factor living environment. 
+Similarly, we might label the factor 2 as financial condition, factor 3 health condition, factor 4 trust condition, factor 5 gender and factor 6 working condition.
+
+
+
+

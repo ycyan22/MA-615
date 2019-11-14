@@ -20,11 +20,11 @@ Strategic goals for the 7th wave include:
 - Expanding the 7th wave WVS with data useful for monitoring the SDGs;
 - Expanding capacity and resources for survey fieldwork in developing countries.
 
-The 7th wave will continue monitoring cultural values, attitudes and beliefs towards gender, family, and religion; attitudes and experience of poverty; education, health, and security; social tolerance and trust; attitudes towards multilateral institutions; cultural differences and similarities between regions and societies. In addition, the WVS-7 questionnaire has been elaborated with the inclusion of such new topics as the issues of justice, moral principles, corruption, accountability and risk, migration, national security and global governance.
+The 7th wave will continue monitoring cultural values, attitudes and beliefs towards gender, family, and religion; attitudes and experience of poverty; education, health, and security; social tolerance and trust; attitudes towards multilateral institutions; cultural differences and similarities between regions and societies. In addition, the WVS-7 questionnaire has been elaborated with the inclusion of such new topics as the issues of justice, moral principles, corruption, accountability and risk, migration, national security and global governance.  
 
 &nbsp;
 &nbsp;
-&nbsp;
+
 
 ## Load Data
 ## Select following survey questions
@@ -51,13 +51,12 @@ q15 - V248: Highest educational level attained
 ```{r survey}
 library(readxl)
 library(dplyr)
-survey <- read_excel('~/Desktop/world value survey/WV6.xlsx') # load data
+survey <- read_excel('WV6.xlsx') # load data
 mydata <- select(survey, 11,12,24,25,57,58,62,102,104,201,306,307,309,311,319) # select questions
 ```
 
-&nbsp;
-&nbsp;
-&nbsp;
+
+\newpage
 
 ## Rename columns and clean no response data
 Since for code -1, -2, -3 here and throughout the interview stand for "Don’t know", "No answer" and "Not applicable", we decided to remove such elemtents.
@@ -86,9 +85,9 @@ mydata[mydata < 0] <- NA # replace negative values with NA
 mydata <- drop_na(mydata) # Drop rows containing missing values
 ```
 
-&nbsp;
-&nbsp;
-&nbsp;
+
+
+\newpage
 
 ## Parallel Analysis
 Next we’ll find out the number of factors that we’ll be selecting for factor analysis.
@@ -105,9 +104,8 @@ parallel <- fa.parallel(mydata, fm = 'minres', fa = 'fa') # parallel analysis
 The blue line shows eigenvalues of actual data and the two red lines (placed on top of each other) show simulated and resampled data. Here we look at the large drops in the actual data and spot the point where it levels off to the right. Also we locate the point of inflection – the point where the gap between simulated data and actual data tends to be minimum.
 Looking at this plot and parallel analysis, anywhere between 2 to 6 factors factors would be good choice.
 
-&nbsp;
-&nbsp;
-&nbsp;
+
+\newpage
 
 ## Factor Analysis
 Now that we’ve arrived at probable number number of factors, let’s start off with 4 as the number of factors.
@@ -117,8 +115,9 @@ fourfactor <- fa(mydata,nfactors = 4,rotate = "oblimin",fm="minres") # 4 factor 
 print(fourfactor)
 ```
 
-&nbsp;
-&nbsp;
+
+
+\newpage
 
 Now we need to consider the loadings more than 0.3 and not loading on more than one factor. Negative values are acceptable here. 
 As you can see 3 variables have become insignificant and 2 other have double-loading. Next, we’ll consider ‘6’ factors:
@@ -137,9 +136,10 @@ fa.diagram(sixfactor)
 
 The root mean square of residuals (RMSR) is 0.01. This is acceptable as this value should be closer to 0. Next we should check RMSEA (root mean square error of approximation) index. Its value, 0.032 shows good model fit as it’s below 0.05. Finally, the Tucker-Lewis Index (TLI) is 0.964 – an acceptable value considering it’s over 0.9.
 
-&nbsp;
-&nbsp;
-&nbsp;
+
+
+
+\newpage
 
 ## Correlations between variables
 The first thing to do when conducting a factor analysis or principal components analysis is to look at the correlations of the variables.
@@ -168,9 +168,10 @@ det(suvMatrix) # get the determinant
 ```
 This value is greater than the necessary value of 0.00001. As such, our determinant does not seem problematic.
 
-&nbsp;
-&nbsp;
-&nbsp;
+
+
+\newpage
+
 
 ## Factor extraction (PCA)
 For our present purposes we will use principal components analysis (PCA).
@@ -208,9 +209,8 @@ large.resid<-abs(residuals) > 0.05
 sum(large.resid)/nrow(residuals)
 ```
 
-&nbsp;
-&nbsp;
-&nbsp;
+
+\newpage
 
 ## Rotation
 Orthogonal rotation (varimax)
@@ -220,9 +220,10 @@ pc3 <- principal(mydata, nfactors=6, rotate="varimax")
 print.psych(pc3, cut = 0.3, sort = TRUE) #displaying only loadings above .3
 ```
 
-&nbsp;
-&nbsp;
 
+\newpage
+
+## Conclusion
 According to the results and information of questionnaires above, we could find the questions that load highly on factor 1 are q3 (“Satisfaction with your life”) with the highest loading of 0.82, q1 (“Feeling of happiness”), q5 (“How much freedom of choice and control over own life”), q2 (“State of health (subjective)”) with the lowest loading of -0.60. All these items seem to relate to physical and mental living conditions. Therefore we might label this factor living environment. 
 Similarly, we might label the factor 2 as financial condition, factor 3 health condition, factor 4 trust condition, factor 5 gender and factor 6 working condition.
 

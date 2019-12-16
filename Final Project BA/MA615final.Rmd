@@ -1,0 +1,341 @@
+---
+title: "MA615final"
+author: "Yichu Yan"
+date: "12/02/2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Airbnb property price and related factors
+## Background
+Airbnb is a convenient website that we use to book lodging or primarily homestays. All of real estate listings are posted by property owners and these owners set unit room prices according to location, condition and many other seasonal influence factors. I plan to study elements that affect Airbnb room prices and try to find a model that could predict or provide a suggested price for Airbnb property. Then the model can be used by Airbnb hosts as a basic pricing tool.
+
+
+&nbsp;
+&nbsp;
+
+
+## Research question
+Which factors could affect Airbnb room prices?
+
+
+&nbsp;
+
+
+## Data collection
+I collect airbnb data of Boston in 2017. The dataset contains variables: room id, host id, room type, neighborhood, the number of reviews, the average rating, the number of guests a listing can accommodate, the number of bedrooms, the price for a night stay, latitude, longitude, the date and time that the values were read.
+
+
+
+\newpage
+
+
+
+
+
+
+
+## Read Data
+Airbnb has 7 sheets of 2017 Boston dataset available online, and I just donwload and read them in RStudio first.
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+library(readr)
+data1<-read_csv("tomslee_airbnb_boston_0779_2017-01-14.csv")
+data2<-read_csv("tomslee_airbnb_boston_0858_2017-02-16.csv")
+data3<-read_csv("tomslee_airbnb_boston_0931_2017-03-12.csv")
+data4<-read_csv("tomslee_airbnb_boston_1043_2017-04-08.csv")
+data5<-read_csv("tomslee_airbnb_boston_1187_2017-05-05.csv")
+data6<-read_csv("tomslee_airbnb_boston_1309_2017-06-10.csv")
+data7<-read_csv("tomslee_airbnb_boston_1429_2017-07-10.csv")
+```
+
+## Data Cleaning
+After viewing variables of each sheets, I find 4 sheets have 14 variables, while other 3 sheets have 20 variables. So, I decide to keep 14 variables.
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+length(colnames(data1))
+length(colnames(data2))
+length(colnames(data3))
+length(colnames(data4))
+length(colnames(data5))
+length(colnames(data6))
+length(colnames(data7))
+```
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+library(dplyr)
+data5<-data5%>%select("room_id","host_id","room_type","borough","neighborhood","reviews","overall_satisfaction","accommodates","bedrooms","price","minstay","latitude","longitude","last_modified")
+data6<-data6%>%select("room_id","host_id","room_type","borough","neighborhood","reviews","overall_satisfaction","accommodates","bedrooms","price","minstay","latitude","longitude","last_modified")
+data7<-data7%>%select("room_id","host_id","room_type","borough","neighborhood","reviews","overall_satisfaction","accommodates","bedrooms","price","minstay","latitude","longitude","last_modified")
+```
+
+
+
+\newpage
+
+
+
+
+## Data Organization
+While combining these sheets, I find some properties have been updated and the whole sheet contains several obervations with same room_id. So, I delete duplicates and only keep the most recent observation. After data analysis, I also delete 2 blank columns and rows containing missing values. Next, I generate a new csv file containing all data.
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+mydata <- rbind(data7,data6,data5,data4,data3,data2,data1)
+sample<-mydata%>%filter(room_id=="12071820")
+```
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+library(tidyverse)
+mydata <- distinct(mydata, room_id, .keep_all = TRUE)
+sample<-mydata%>%filter(room_id=="12071820")
+```
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+mydata<-mydata%>%select("room_id","host_id","room_type","neighborhood","reviews","overall_satisfaction","accommodates","bedrooms","price","latitude","longitude","last_modified")
+library(funModeling)
+data_integrity(mydata)
+mydata <- drop_na(mydata)
+#write.csv(mydata,"Boston2017.csv", row.names = FALSE)
+```
+
+
+
+\newpage
+
+
+
+
+## Review analysis
+In order to visualize most frequent words shown in reviews, I use text mining to generate a graph.
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+library(gutenbergr)
+library(tidytext)
+library(knitr)
+library(textdata)
+library(magrittr)
+library(tm)
+
+booksource <- read.delim("reviews.txt", header=F, sep = "\n",stringsAsFactors = F)
+booksource <- as.data.frame(booksource)
+names(booksource)[1]  <- "text"
+booksource <- booksource %>% mutate(gutenberg_id = 2007)
+
+book <- "Reviews"
+as.character(book)
+orignial_book <- cbind(booksource, book)
+
+library(janeaustenr)
+tidy_book <- orignial_book %>%
+  group_by(book) %>%
+  mutate(linenumber = row_number(),
+         chapter = cumsum(str_detect(text, regex("^chapter [\\divxlc]",
+                                                 ignore_case = TRUE)))) %>%
+  ungroup()
+
+tidy_book <- tidy_book %>%
+  unnest_tokens(word, text)
+
+library(wordcloud)
+tidy_book %>%
+  anti_join(stop_words) %>%
+  count(word) %>%
+  with(wordcloud(word, n, max.words = 100))
+```
+
+
+
+\newpage
+
+
+
+# EDA
+## Data plots and table
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+library(ggplot2)
+library(stringi)
+ggplot(mydata, aes(x = neighborhood, fill = room_type)) +
+  geom_bar() +
+  ggtitle("Roomtype Distribution in differen areas") +
+  scale_fill_brewer(palette = "Paired")
+
+ggplot(mydata, aes(x = bedrooms, fill = room_type)) +
+  geom_bar() +
+  ggtitle("Bedrooms in differen room types") +
+  scale_fill_brewer(palette = "Paired")
+
+ggplot(mydata, aes(x = accommodates, fill = room_type)) +
+  geom_bar() +
+  ggtitle("Roomtype accommodation") +
+  scale_fill_brewer(palette = "Paired")
+```
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+ggplot(data = mydata, aes(x = neighborhood, y = price, color = room_type)) +
+    geom_point(size = 3) +
+    geom_line() +
+  ggtitle("Neighborhood and price")
+
+ggplot(data = mydata, aes(x = bedrooms, y = price, color = room_type)) +
+    geom_point(size = 3) + 
+  ggtitle("Bedrooms and price")
+
+ggplot(data = mydata, aes(x = accommodates, y = price, color = room_type)) +
+    geom_point(size = 3) + 
+  ggtitle("Accomodates and price")
+```
+
+
+
+\newpage
+
+
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+library(kableExtra)
+df1 <- mydata[,c("neighborhood","accommodates","price")]
+df2 <- aggregate(df1[,2:3],by=list(df1$neighborhood),mean)
+kable(df2, digits = 2,       ## call kable to make the table
+      col.names = c("Location", "Average Rating", "Price"), 
+      caption = "Location and price by average rating" ,align = 'c') %>%
+  kable_styling(latex_options = 'hold_position',font_size = 12,full_width = F,position = "center")%>%
+  column_spec(1,bold = T)
+```
+
+
+&nbsp;
+&nbsp;
+
+
+The data has 25 subregions in the neighborhood variable and plots compare unit room prices in different locations. The table also show summary of price and accomodates regardless of room types.  
+
+
+
+\newpage
+
+
+
+
+## Concerns
+
+Zero values in “the number of reviews” and “the average rating” may lead to potential problems. Usually, living spots with unattractive appearance or location probably have few or no reviews. But new posted houses also have zero review since no one has stayed before. If I keep these zero values in the fitted model, the model will predict relatively low prices for those new lodgings. In addition, the plot shows 3 outliers with pretty high price above $3000, which might make regression less reliable. In this way, I remove these observations.
+
+&nbsp;
+&nbsp;
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+mydata$reviews[mydata$reviews=="0"] <- NA
+mydata <- drop_na(mydata)
+mydata <- mydata[!(mydata$price==max(mydata$price)),]
+mydata <- mydata[!(mydata$price==max(mydata$price)),]
+mydata <- mydata[!(mydata$price==max(mydata$price)),]
+```
+
+
+\newpage
+
+
+
+
+# Methods
+## Correlation
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+mydata$reviews<-as.numeric(mydata$reviews)
+mydata$overall_satisfaction<-as.numeric(mydata$overall_satisfaction)
+mydata$latitude<-as.numeric(mydata$latitude)
+mydata$longitude<-as.numeric(mydata$longitude)
+sapply(mydata, is.numeric)
+cordata <- mydata[, sapply(mydata, is.numeric)]
+cor.ma <- cor(cordata, method = "pearson")
+corrplot::corrplot(cor.ma, method = "circle", type = "upper", diag = F) 
+```
+
+&nbsp;
+&nbsp;
+
+Some variables like accomodates and bedrooms have high correlations, so I need to consider only use part of them in models.
+
+
+\newpage
+
+
+
+
+## EFA
+Dataset has 12 variables and I want to find out the number of factors that will be selected for later analysis.
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+library(psych) 
+library(GPArotation)
+parallel <- fa.parallel(cordata, fm = 'minres', fa = 'fa') # parallel analysis
+```
+
+&nbsp;
+&nbsp;
+
+The blue line shows eigenvalues of actual data and the two red lines (placed on top of each other) show simulated and resampled data. Here we look at the large drops in the actual data and spot the point where it levels off to the right. Also we locate the point of inflection – the point where the gap between simulated data and actual data tends to be minimum.
+
+
+&nbsp;
+&nbsp;
+
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+fourfactor <- fa(cordata,nfactors = 4,rotate = "oblimin",fm="minres") # 4 factor analysis
+fa.diagram(fourfactor)
+```
+
+
+\newpage
+
+
+
+
+## Random Forest
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+library(randomForest)
+model1 <- randomForest(price~., data=cordata, importance=T, ntree=500)
+model2 <- randomForest(price~., data=cordata, importance=T, ntree=1000)
+varImpPlot(model1)
+varImpPlot(model2)
+```
+
+&nbsp;
+&nbsp;
+
+Try to fit models using top factors
+
+
+\newpage
+
+
+
+
+# Models
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+fit1 <- lm(price~log(accommodates)+bedrooms+reviews*overall_satisfaction+as.factor(neighborhood)+as.factor(room_type), data=mydata)
+summary(fit1)
+plot(fit1,which=1)
+car::qqPlot(fit1$residuals)
+```
+
+
+\newpage
+
+
+
+# Citation
+
+http://tomslee.net/airbnb-data-collection-get-the-data  
+
+&nbsp;
+
+http://insideairbnb.com/get-the-data.html
